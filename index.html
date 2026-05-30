@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="theme-color" content="#e85d2f" />
+<title>英検3級 熟語マスター</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.10/babel.min.js" crossorigin></script>
+<style>
+  html, body { margin: 0; padding: 0; }
+  #root { min-height: 100vh; }
+</style>
+</head>
+<body>
+<div id="root">
+  <div style="font-family:sans-serif;text-align:center;padding:48px 20px;color:#999;">
+    読み込み中…<br><br>
+    <span style="font-size:13px;">（はじめて開くときはインターネット接続が必要です）</span>
+  </div>
+</div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useMemo } = React;
+
+// ===== 熟語データ（熟語編 0901〜1100・全200個） =====
+const WORDS = [
+  { id: "0901", word: "want to do", pos: "Section 10", meaning: "〜したい（と思う）", ex: "The girl wants to get a new bike.", exJa: "その女の子は新しい自転車を買いたいと思っています。", note: "" },
+  { id: "0902", word: "like to do", pos: "Section 10", meaning: "〜するのが好きである", ex: "She likes to go shopping with her friends.", exJa: "彼女は友だちと買い物に行くのが好きです。", note: "like doing も同じ意味" },
+  { id: "0903", word: "have to do", pos: "Section 10", meaning: "〜しなければならない", ex: "I have to finish this report by next Monday.", exJa: "私はこの報告書を次の月曜日までに完成させなければなりません。", note: "" },
+  { id: "0904", word: "like doing", pos: "Section 10", meaning: "〜するのが好きである", ex: "Those boys like playing basketball very much.", exJa: "その男の子たちはバスケットボールをするのがとても好きです。", note: "like to do も同じ意味" },
+  { id: "0905", word: "enjoy doing", pos: "Section 10", meaning: "〜するのを楽しむ", ex: "They enjoyed watching a volleyball game on TV.", exJa: "彼らはテレビでバレーボールの試合を見るのを楽しみました。", note: "doing を to do に変えられない" },
+  { id: "0906", word: "look forward to doing [A]", pos: "Section 10", meaning: "〜するのを［A を］楽しみに待つ", ex: "I'm looking forward to seeing you again.", exJa: "またあなたに会えるのを楽しみに待っています。", note: "" },
+  { id: "0907", word: "need to do", pos: "Section 10", meaning: "〜する必要がある", ex: "We need to find someone who can speak French.", exJa: "私たちはフランス語が話せる人を見つける必要があります。", note: "" },
+  { id: "0908", word: "take A to B", pos: "Section 10", meaning: "A を B に連れていく、A を B に持っていく", ex: "Dad took me to the baseball game.", exJa: "お父さんは私をその野球の試合に連れていってくれました。", note: "" },
+  { id: "0909", word: "how long 〜", pos: "Section 10", meaning: "どれくらいの時間［期間、長さ］〜", ex: "How long is the show?", exJa: "上映時間はどれくらいですか。", note: "" },
+  { id: "0910", word: "want A to do", pos: "Section 10", meaning: "A に〜してほしい（と思う）", ex: "My father wants me to become a doctor.", exJa: "父は私に医師になってほしいと思っています。", note: "" },
+  { id: "0911", word: "be good at 〜", pos: "Section 10", meaning: "〜がじょうず［得意］である", ex: "My uncle is good at playing soccer.", exJa: "私のおじはサッカーをするのがじょうずです。", note: "" },
+  { id: "0912", word: "go out (for 〜)", pos: "Section 10", meaning: "（〜に）出かける", ex: "It's a beautiful day. Why don't we go out for lunch?", exJa: "いい天気ですね。昼食に出かけませんか。", note: "" },
+  { id: "0913", word: "start doing", pos: "Section 10", meaning: "〜し始める", ex: "She started learning English when she was ten.", exJa: "彼女は10歳のときに英語を学び始めました。", note: "" },
+  { id: "0914", word: "after school", pos: "Section 10", meaning: "放課後に", ex: "I always go straight home after school.", exJa: "私はいつも放課後にまっすぐ帰宅します。", note: "" },
+  { id: "0915", word: "go and do", pos: "Section 10", meaning: "〜しに行く", ex: "I have a stomachache. Could you go and get some medicine for me?", exJa: "私はおなかが痛いです。私のために薬を取りに行っていただけますか。", note: "" },
+  { id: "0916", word: "grow up (in 〜)", pos: "Section 10", meaning: "（〜で）成長する、（〜で）大人になる", ex: "He was born in Australia, but grew up in Japan.", exJa: "彼はオーストラリアで生まれましたが、日本で育ちました。", note: "" },
+  { id: "0917", word: "this morning", pos: "Section 10", meaning: "今朝", ex: "It was raining this morning, but it's sunny now.", exJa: "今朝は雨が降っていましたが、今は晴れています。", note: "in などの前置詞をつけないで使う" },
+  { id: "0918", word: "be popular with A", pos: "Section 10", meaning: "A に人気がある", ex: "In that country, ice hockey is popular with many people.", exJa: "その国では、アイスホッケーはたくさんの人に人気があります。", note: "" },
+  { id: "0919", word: "a lot of 〜", pos: "Section 10", meaning: "たくさんの〜", ex: "I have a lot of things to do today.", exJa: "今日はすることがたくさんあります。", note: "= lots of 〜／数えられる名詞も数えられない名詞も入る" },
+  { id: "0920", word: "be able to do", pos: "Section 10", meaning: "〜することができる", ex: "They made a robot that is able to walk.", exJa: "彼らは歩くことができるロボットを作りました。", note: "" },
+  { id: "0921", word: "from A to B", pos: "Section 10", meaning: "A から B まで", ex: "She goes to swimming school from Mondays to Thursdays.", exJa: "彼女は毎週月曜日から木曜日までスイミングスクールに通っています。", note: "" },
+  { id: "0922", word: "a little", pos: "Section 10", meaning: "少し", ex: "It was warm yesterday, but it is a little cold this morning.", exJa: "昨日は暖かかったけれど、今朝は少し寒いです。", note: "" },
+  { id: "0923", word: "be late for 〜", pos: "Section 10", meaning: "〜に遅刻する［遅れる］", ex: "I forgot to set my alarm clock last night, so I was late for school.", exJa: "昨夜、私は目覚まし時計をセットし忘れたので、学校に遅刻しました。", note: "" },
+  { id: "0924", word: "how to do", pos: "Section 10", meaning: "〜の仕方、〜する方法", ex: "My grandmother taught me how to make an apple pie.", exJa: "祖母は私にアップルパイの作り方を教えてくれました。", note: "" },
+  { id: "0925", word: "look for 〜", pos: "Section 10", meaning: "〜を探す", ex: "We are looking for people who can do volunteer work.", exJa: "私たちはボランティアの仕事ができる人を探しています。", note: "" },
+  { id: "0926", word: "a few 〜", pos: "Section 10", meaning: "少数の〜、2、3の〜", ex: "I saw him at the gym a few minutes ago.", exJa: "私は数分前に彼を体育館で見かけました。", note: "〜には数えられる名詞の複数形が入る" },
+  { id: "0927", word: "ask A to do", pos: "Section 10", meaning: "A に〜するように頼む", ex: "My friend asked me to bring something to drink to the picnic.", exJa: "友だちは私にピクニックに何か飲み物を持ってくるように頼みました。", note: "" },
+  { id: "0928", word: "be ready for 〜", pos: "Section 10", meaning: "〜の準備ができている", ex: "He is ready for tomorrow's science test.", exJa: "彼は明日の理科のテストの準備ができています。", note: "" },
+  { id: "0929", word: "move to 〜", pos: "Section 10", meaning: "〜に引っ越す", ex: "The family moved to a new house near a lake last month.", exJa: "その家族は先月、湖の近くの新しい家に引っ越しました。", note: "" },
+  { id: "0930", word: "decide to do", pos: "Section 10", meaning: "〜することに決める", ex: "My older brother decided to buy a used car made in Germany.", exJa: "私の兄はドイツ製の中古車を買うことに決めました。", note: "to do の代わりに doing は置けない" },
+  { id: "0931", word: "in front of 〜", pos: "Section 10", meaning: "〜の前で［に］", ex: "Let's meet in front of the department store at noon.", exJa: "正午にデパートの前で会いましょう。", note: "⇔ behind 〜の後ろに" },
+  { id: "0932", word: "one of 〜", pos: "Section 10", meaning: "〜の1人［1つ］", ex: "They have three children. One of them is a college student.", exJa: "彼らには3人の子どもがいます。そのうちの1人は大学生です。", note: "" },
+  { id: "0933", word: "plan to do", pos: "Section 10", meaning: "〜するつもりである", ex: "I'm planning to take cooking lessons during summer vacation.", exJa: "私は夏休みの間、料理のレッスンを受けるつもりです。", note: "to do の代わりに doing は置けない" },
+  { id: "0934", word: "〜 year(s) old", pos: "Section 10", meaning: "〜歳", ex: "I visited China when I was twelve years old.", exJa: "私は12歳のときに中国を訪れました。", note: "1歳は one year old と表す" },
+  { id: "0935", word: "help A with B", pos: "Section 10", meaning: "A の B を手伝う", ex: "He often helps his father with his work.", exJa: "彼はよく父親の仕事を手伝います。", note: "" },
+  { id: "0936", word: "by oneself", pos: "Section 10", meaning: "1人で、独力で", ex: "My grandfather lives by himself in a small apartment.", exJa: "私の祖父は小さなアパートで1人で暮らしています。", note: "= alone／主語によって myself や himself などに変わる" },
+  { id: "0937", word: "forget to do", pos: "Section 10", meaning: "〜するのを忘れる", ex: "Don't forget to send her a letter.", exJa: "彼女に手紙を送るのを忘れてはいけません。", note: "" },
+  { id: "0938", word: "in the morning [afternoon / evening]", pos: "Section 10", meaning: "午前（中）［午後／夕方］に", ex: "I studied at the library in the morning.", exJa: "私は午前中に図書館で勉強しました。", note: "" },
+  { id: "0939", word: "take part in 〜", pos: "Section 10", meaning: "〜に参加する", ex: "My classmate is going to take part in the speech contest next month.", exJa: "私のクラスメートは来月スピーチコンテストに参加する予定です。", note: "" },
+  { id: "0940", word: "worry about 〜", pos: "Section 10", meaning: "〜のことを心配する", ex: "I can do it myself, so don't worry about me.", exJa: "私は自分でそれをできるから、私のことを心配しないでね。", note: "" },
+  { id: "0941", word: "go home", pos: "Section 10", meaning: "家に帰る", ex: "Children, it's time to go home.", exJa: "子どもたち、家に帰る時間ですよ。", note: "" },
+  { id: "0942", word: "how often 〜", pos: "Section 10", meaning: "どれくらいの頻度で〜", ex: "How often do you play tennis?", exJa: "あなたはどれくらいの頻度でテニスをしますか。", note: "" },
+  { id: "0943", word: "listen to 〜", pos: "Section 10", meaning: "〜を聞く", ex: "She is listening to music in her room.", exJa: "彼女は自分の部屋で音楽を聞いています。", note: "" },
+  { id: "0944", word: "make A of B", pos: "Section 10", meaning: "A を B で作る", ex: "We bought two chairs that were made of wood.", exJa: "私たちは木で作られたいすを2脚買いました。", note: "原料の質が変化しない場合に使う" },
+  { id: "0945", word: "stay home", pos: "Section 10", meaning: "家にいる", ex: "If it rains tomorrow, I'll stay home and watch TV.", exJa: "明日雨が降ったら、私は家にいてテレビを見ます。", note: "" },
+  { id: "0946", word: "tell A to do", pos: "Section 10", meaning: "A に〜するように言う", ex: "My mother often tells me to read books.", exJa: "母はよく私に本を読むように言います。", note: "" },
+  { id: "0947", word: "each other", pos: "Section 10", meaning: "お互い", ex: "We've known each other since we were small.", exJa: "私たちは幼いころからお互いを知っています。", note: "" },
+  { id: "0948", word: "far away", pos: "Section 10", meaning: "遠くに", ex: "I don't see my grandparents often because they live far away.", exJa: "私の祖父母は遠くに住んでいるので、私は彼らに頻繁には会いません。", note: "" },
+  { id: "0949", word: "get off (〜)", pos: "Section 10", meaning: "（乗り物から）降りる", ex: "Let's get off the bus at the next stop and walk.", exJa: "次の停留所でバスを降りて歩きましょう。", note: "⇔ get on (〜)（乗り物に）乗る" },
+  { id: "0950", word: "get up", pos: "Section 10", meaning: "起きる", ex: "I get up early every morning to go jogging.", exJa: "私はジョギングに行くために毎朝早く起きます。", note: "" },
+  { id: "0951", word: "have lunch", pos: "Section 10", meaning: "昼食をとる", ex: "We had lunch at an Italian restaurant near the museum.", exJa: "私たちは博物館の近くのイタリア料理店で昼食をとりました。", note: "" },
+  { id: "0952", word: "more than 〜", pos: "Section 10", meaning: "〜を超える、〜より多い", ex: "There were more than a hundred people at the party.", exJa: "そのパーティーには100人を超える人々がいました。", note: "反対は less than 〜「〜より少ない」" },
+  { id: "0953", word: "pay (A) for B", pos: "Section 10", meaning: "B のために（A を）支払う", ex: "The woman paid fifty dollars for dinner last night.", exJa: "その女性は昨夜、夕食のために50ドルを支払いました。", note: "A はお金、B は品物などが入る" },
+  { id: "0954", word: "run away", pos: "Section 10", meaning: "逃げる、走り去る", ex: "The news says that a monkey ran away from the zoo.", exJa: "ニュースによると、1匹のサルが動物園から逃げました。", note: "目的語を伴わない" },
+  { id: "0955", word: "try on 〜", pos: "Section 10", meaning: "〜を試着する", ex: "Excuse me. Can I try on this jacket?", exJa: "すみません。この上着を試着してもいいですか。", note: "目的語が代名詞のときは try it on のように語順が変わる" },
+  { id: "0956", word: "turn off 〜", pos: "Section 10", meaning: "（電気など）を消す、（ガス・水道など）を止める", ex: "Please turn off the light when you leave the room.", exJa: "部屋を出るときは明かりを消してください。", note: "" },
+  { id: "0957", word: "wait for 〜", pos: "Section 10", meaning: "〜を待つ", ex: "I'll wait for you at the restaurant.", exJa: "私はそのレストランであなたを待ちます。", note: "" },
+  { id: "0958", word: "because of 〜", pos: "Section 10", meaning: "〜のために", ex: "We didn't go to see the soccer game because of the bad weather.", exJa: "私たちは悪天候のためにそのサッカーの試合を見に行きませんでした。", note: "" },
+  { id: "0959", word: "do well (on 〜)", pos: "Section 10", meaning: "（〜で）うまくいく、（〜で）よい結果を出す", ex: "I hope I'll do well on the English test.", exJa: "英語のテストでうまくいくといいな。", note: "" },
+  { id: "0960", word: "one day", pos: "Section 10", meaning: "いつか、ある日", ex: "He wants to travel in Europe one day.", exJa: "彼はいつかヨーロッパを旅行したいと思っています。", note: "未来にも過去にも使う" },
+  { id: "0961", word: "too A to do", pos: "Section 10", meaning: "とても A（形容詞・副詞）なので〜できない", ex: "The man was too busy to have lunch today.", exJa: "その男性はとても忙しかったので、今日昼食をとることができませんでした。", note: "" },
+  { id: "0962", word: "all over the world", pos: "Section 10", meaning: "世界中（で）", ex: "That singer is known to people all over the world.", exJa: "その歌手は世界中の人々に知られています。", note: "" },
+  { id: "0963", word: "arrive in [at] 〜", pos: "Section 10", meaning: "〜に着く、〜に到着する", ex: "We will arrive in Chicago before noon.", exJa: "私たちは正午までにシカゴに着くでしょう。", note: "in は広い場所、at は狭い場所に使う" },
+  { id: "0964", word: "at first", pos: "Section 10", meaning: "最初は", ex: "At first, I didn't like math, but now it's my favorite subject.", exJa: "最初は、私は数学が好きでありませんでしたが、今では大好きな教科です。", note: "⇔ in the end 最後には" },
+  { id: "0965", word: "be afraid of 〜", pos: "Section 10", meaning: "〜を恐れる、〜を怖がる", ex: "Don't be afraid of making mistakes.", exJa: "間違えることを恐れてはいけません。", note: "= be scared of 〜" },
+  { id: "0966", word: "be sick in bed", pos: "Section 10", meaning: "病気で寝ている", ex: "She has been sick in bed for five days.", exJa: "彼女は5日間病気で寝ています。", note: "bed に a や the がつかない" },
+  { id: "0967", word: "get home", pos: "Section 10", meaning: "帰宅する", ex: "When I got home, my mother was washing clothes.", exJa: "私が帰宅したとき、母は衣類を洗っていました。", note: "" },
+  { id: "0968", word: "invite A to B", pos: "Section 10", meaning: "A を B に招待する", ex: "Our friend invited us to her birthday party.", exJa: "私たちの友だちは私たちを彼女の誕生日パーティーに招待してくれました。", note: "" },
+  { id: "0969", word: "lots of 〜", pos: "Section 10", meaning: "たくさんの〜", ex: "You don't have to bring anything because there will be lots of food.", exJa: "食べ物はたくさんあるので、あなたは何も持ってこなくていいです。", note: "= a lot of 〜" },
+  { id: "0970", word: "on business", pos: "Section 10", meaning: "仕事で", ex: "My father sometimes goes to Los Angeles on business.", exJa: "私の父はときどき仕事でロサンゼルスへ行きます。", note: "business に a や the をつけない" },
+  { id: "0971", word: "stay at 〜", pos: "Section 10", meaning: "（場所）に泊まる", ex: "She is going to stay at her friend's house tonight.", exJa: "彼女は今夜友だちの家に泊まる予定です。", note: "" },
+  { id: "0972", word: "want to be [become] 〜", pos: "Section 10", meaning: "〜になりたい（と思う）", ex: "I want to be an astronaut in the future.", exJa: "私は将来、宇宙飛行士になりたいと思います。", note: "" },
+  { id: "0973", word: "all day (long)", pos: "Section 10", meaning: "1日中", ex: "It will be sunny all day long tomorrow.", exJa: "明日は1日中晴れるでしょう。", note: "" },
+  { id: "0974", word: "both A and B", pos: "Section 10", meaning: "A も B も両方とも", ex: "The store manager is able to speak both Japanese and English.", exJa: "その店長は日本語も英語も両方とも話すことができます。", note: "" },
+  { id: "0975", word: "look like 〜", pos: "Section 10", meaning: "〜に似ている、〜のように見える", ex: "That dress looks like the one I bought last week.", exJa: "あのドレスは私が先週買ったものに似ています。", note: "" },
+  { id: "0976", word: "put on 〜", pos: "Section 10", meaning: "〜を着る、〜を身につける", ex: "It was cold, so I put on a coat.", exJa: "寒かったので、私はコートを着ました。", note: "⇔ take off 〜 〜を脱ぐ" },
+  { id: "0977", word: "speak to 〜", pos: "Section 10", meaning: "〜に話しかける", ex: "I spoke to the woman looking at the map.", exJa: "私は地図を見ている女性に話しかけました。", note: "" },
+  { id: "0978", word: "stay in 〜", pos: "Section 10", meaning: "（場所）に滞在する［泊まる］", ex: "My family and I stayed in Canada for two weeks last summer.", exJa: "私の家族と私は昨年の夏、2週間カナダに滞在しました。", note: "" },
+  { id: "0979", word: "〜 than any other A", pos: "Section 10", meaning: "他のどの A（単数名詞）よりも〜（比較級）", ex: "Our soccer team is stronger than any other team in this city.", exJa: "私たちのサッカーチームはこの市の他のどのチームよりも強いです。", note: "" },
+  { id: "0980", word: "travel to 〜", pos: "Section 10", meaning: "〜に行く、〜へ旅行する", ex: "He traveled to Seattle by train.", exJa: "彼は列車でシアトルに行きました。", note: "" },
+  { id: "0981", word: "a pair of 〜", pos: "Section 10", meaning: "1組［足、対］の〜", ex: "I want to buy a new pair of shoes for my school trip.", exJa: "私は修学旅行のために新しい靴を1足買いたいです。", note: "" },
+  { id: "0982", word: "anything else", pos: "Section 10", meaning: "（疑問文で）他に何か", ex: "Do you want me to do anything else, Grandma?", exJa: "他に何か私にしてほしいことはある、おばあちゃん？", note: "" },
+  { id: "0983", word: "be proud of 〜", pos: "Section 10", meaning: "〜を誇りに思う", ex: "She is proud of her son.", exJa: "彼女は息子を誇りに思っています。", note: "" },
+  { id: "0984", word: "be ready to do", pos: "Section 10", meaning: "〜する準備ができている", ex: "Are you ready to go to the party?", exJa: "パーティーに行く準備はできていますか。", note: "to do の代わりに doing は置けない" },
+  { id: "0985", word: "do one's best", pos: "Section 10", meaning: "最善を尽くす", ex: "I'll do my best in the next tennis match.", exJa: "私は次のテニスの試合で最善を尽くします。", note: "one's は主語によって my などに変わる" },
+  { id: "0986", word: "far from 〜", pos: "Section 10", meaning: "〜から遠くに", ex: "Is your house far from the station?", exJa: "あなたの家は駅から遠いですか。", note: "" },
+  { id: "0987", word: "find out 〜", pos: "Section 10", meaning: "〜を知る、〜を見つけ出す", ex: "Please visit our website to find out more information.", exJa: "もっと多くの情報を知るには、私たちのウェブサイトを訪れてください。", note: "" },
+  { id: "0988", word: "get married", pos: "Section 10", meaning: "結婚する", ex: "My granddaughter got married two years ago.", exJa: "私の孫娘は2年前に結婚しました。", note: "" },
+  { id: "0989", word: "get to 〜", pos: "Section 10", meaning: "〜に着く", ex: "What time are we going to get to the airport?", exJa: "私たちは何時に空港に着くでしょうか。", note: "" },
+  { id: "0990", word: "give A a ride", pos: "Section 10", meaning: "A を車で送る［車に乗せる］", ex: "It was raining, so my father gave me a ride to school.", exJa: "雨が降っていたので、父が私を学校まで車で送ってくれました。", note: "" },
+  { id: "0991", word: "go into 〜", pos: "Section 10", meaning: "〜に入る", ex: "Please take off your shoes when you go into the house.", exJa: "家に入るときは靴を脱いでください。", note: "= enter" },
+  { id: "0992", word: "go to work", pos: "Section 10", meaning: "仕事に行く", ex: "Dad, do you have to go to work this Saturday?", exJa: "お父さん、今度の土曜日は仕事に行かなければならないの？", note: "" },
+  { id: "0993", word: "have time to do", pos: "Section 10", meaning: "〜する時間がある", ex: "We didn't have time to visit her last month.", exJa: "私たちは先月、彼女を訪ねる時間がありませんでした。", note: "" },
+  { id: "0994", word: "hear about 〜", pos: "Section 10", meaning: "〜について聞く", ex: "Did you hear about the train accident?", exJa: "あなたはその列車の事故について聞きましたか。", note: "" },
+  { id: "0995", word: "in the world", pos: "Section 10", meaning: "世界（中）で", ex: "That is the highest mountain in the world.", exJa: "あれは世界で最も高い山です。", note: "" },
+  { id: "0996", word: "most of 〜", pos: "Section 10", meaning: "〜のほとんど", ex: "Most of the students go to school by bus.", exJa: "生徒のほとんどがバスで学校へ行きます。", note: "" },
+  { id: "0997", word: "near here", pos: "Section 10", meaning: "この近くに", ex: "Are there any good restaurants near here?", exJa: "この近くによいレストランはありますか。", note: "" },
+  { id: "0998", word: "next to 〜", pos: "Section 10", meaning: "〜の隣に", ex: "He works at the coffee shop next to the hotel.", exJa: "彼はそのホテルの隣のコーヒー店で働いています。", note: "" },
+  { id: "0999", word: "not 〜 at all", pos: "Section 10", meaning: "まったく〜ない", ex: "I didn't understand his story at all.", exJa: "私は彼の話をまったく理解できませんでした。", note: "" },
+  { id: "1000", word: "not have to do", pos: "Section 10", meaning: "〜しなくてもよい、〜する必要がない", ex: "You don't have to eat that.", exJa: "それを食べなくてもいいですよ。", note: "" },
+  { id: "1001", word: "pick up A", pos: "Section 11", meaning: "A を車で迎えに行く［来る］", ex: "She is going to pick up her husband at the station tonight.", exJa: "彼女は今夜夫を駅に車で迎えに行く予定です。", note: "" },
+  { id: "1002", word: "stay with A", pos: "Section 11", meaning: "A のところに泊まる［滞在する］", ex: "I'm going to stay with my uncle in Sydney next weekend.", exJa: "私は来週末、シドニーにいるおじのところに泊まる予定です。", note: "" },
+  { id: "1003", word: "stop doing", pos: "Section 11", meaning: "〜するのをやめる", ex: "The students stopped talking when the teacher came in.", exJa: "生徒たちは先生が入ってくるとおしゃべりするのをやめました。", note: "stop to do は「〜するために立ち止まる」" },
+  { id: "1004", word: "take a trip", pos: "Section 11", meaning: "旅行する", ex: "I hear you're going to take a trip next month.", exJa: "あなたは来月旅行するそうですね。", note: "" },
+  { id: "1005", word: "take care of 〜", pos: "Section 11", meaning: "〜の世話をする", ex: "Who's going to take care of your dog while you're on vacation?", exJa: "あなたが休暇の間は誰が犬の世話をするのですか。", note: "= look after 〜" },
+  { id: "1006", word: "twice a week [month]", pos: "Section 11", meaning: "週［月］に2回", ex: "I work at the hospital as a volunteer twice a week.", exJa: "私は週に2回ボランティアとして病院で働いています。", note: "" },
+  { id: "1007", word: "wake up", pos: "Section 11", meaning: "目が覚める、起きる", ex: "The girl woke up early today.", exJa: "その女の子は今日早く目が覚めました。", note: "" },
+  { id: "1008", word: "work for 〜", pos: "Section 11", meaning: "〜で働く、〜に勤める、（ある時間）働く", ex: "He works for a big airline company.", exJa: "彼は大きな航空会社で働いています。", note: "" },
+  { id: "1009", word: "a lot", pos: "Section 11", meaning: "ずいぶん、たいへん", ex: "He helped me a lot when I stayed in the United States.", exJa: "彼は私がアメリカに滞在していたときにずいぶん私を助けてくれました。", note: "" },
+  { id: "1010", word: "at work", pos: "Section 11", meaning: "仕事中で、職場で", ex: "She is at work now, so could you come again later?", exJa: "彼女は今仕事中なので、後でまた来ていただけますか。", note: "" },
+  { id: "1011", word: "be different from 〜", pos: "Section 11", meaning: "〜と違う", ex: "My idea is different from his.", exJa: "私の考えは彼の考えと違います。", note: "" },
+  { id: "1012", word: "be in the hospital", pos: "Section 11", meaning: "入院している", ex: "My friend has been in the hospital since last Tuesday.", exJa: "私の友だちはこの前の火曜日から入院しています。", note: "" },
+  { id: "1013", word: "be sold out", pos: "Section 11", meaning: "売り切れている", ex: "The concert tickets will be sold out soon.", exJa: "そのコンサートのチケットはすぐに売り切れるでしょう。", note: "" },
+  { id: "1014", word: "between A and B", pos: "Section 11", meaning: "A と B の間に", ex: "The post office is between a supermarket and a bookstore.", exJa: "その郵便局はスーパーマーケットと書店の間にあります。", note: "" },
+  { id: "1015", word: "catch a cold", pos: "Section 11", meaning: "風邪をひく", ex: "He caught a cold and couldn't go on the school trip.", exJa: "彼は風邪をひいて修学旅行に行けませんでした。", note: "" },
+  { id: "1016", word: "come back", pos: "Section 11", meaning: "戻ってくる", ex: "You can go to the park. But come back before dinner.", exJa: "公園に行ってもいいですよ。でも夕食の前に戻ってきなさい。", note: "" },
+  { id: "1017", word: "come home", pos: "Section 11", meaning: "帰宅する", ex: "Can you come home early? Grandma will visit us today.", exJa: "早く帰宅できますか。今日はおばあちゃんがうちへ来ます。", note: "" },
+  { id: "1018", word: "do one's homework", pos: "Section 11", meaning: "宿題をする", ex: "I usually do my homework after school.", exJa: "私はたいてい放課後に宿題をします。", note: "Have you done your homework yet? は「もう宿題はやったかな？」" },
+  { id: "1019", word: "for free", pos: "Section 11", meaning: "無料で", ex: "You can enter the museum for free today.", exJa: "今日はその博物館に無料で入れます。", note: "" },
+  { id: "1020", word: "for the first time", pos: "Section 11", meaning: "初めて", ex: "He took a plane for the first time when he went to China this spring.", exJa: "彼は今年の春に中国へ行ったとき、初めて飛行機に乗りました。", note: "" },
+  { id: "1021", word: "go back to 〜", pos: "Section 11", meaning: "〜へ戻る、〜へ帰る", ex: "This exchange student went back to the United States last month.", exJa: "この交換留学生は先月アメリカに帰りました。", note: "" },
+  { id: "1022", word: "how far 〜", pos: "Section 11", meaning: "どれくらいの距離〜", ex: "How far is it from here to the station?", exJa: "ここから駅までどれくらいの距離ですか。", note: "" },
+  { id: "1023", word: "how many times 〜", pos: "Section 11", meaning: "何回〜", ex: "How many times have you been to France?", exJa: "あなたはフランスに何回行ったことがありますか。", note: "答えるときは once, twice, three times など" },
+  { id: "1024", word: "hurry up", pos: "Section 11", meaning: "急ぐ", ex: "Hurry up! The concert will start in ten minutes.", exJa: "急いで！あと10分でコンサートが始まります。", note: "" },
+  { id: "1025", word: "in the future", pos: "Section 11", meaning: "将来、未来に", ex: "What do you want to do in the future?", exJa: "あなたは将来何をしたいですか。", note: "" },
+  { id: "1026", word: "not 〜 yet", pos: "Section 11", meaning: "まだ〜ない", ex: "I haven't finished cleaning my room yet.", exJa: "私はまだ部屋の掃除を終えていません。", note: "" },
+  { id: "1027", word: "on vacation", pos: "Section 11", meaning: "休暇（中）で", ex: "I'm going to Hawaii on vacation this summer.", exJa: "私はこの夏に休暇でハワイへ行く予定です。", note: "" },
+  { id: "1028", word: "put A in B", pos: "Section 11", meaning: "A を B に入れる", ex: "He put his old clothes in a box.", exJa: "彼は古い衣類を箱に入れました。", note: "" },
+  { id: "1029", word: "stay up late", pos: "Section 11", meaning: "遅くまで起きている", ex: "I'm sleepy because I stayed up late last night.", exJa: "私は昨夜遅くまで起きていたので眠いです。", note: "" },
+  { id: "1030", word: "such as 〜", pos: "Section 11", meaning: "（たとえば）〜のような", ex: "Fruit such as peaches and pears is grown in this area.", exJa: "桃や梨のような果物がこの地域で栽培されています。", note: "" },
+  { id: "1031", word: "take a walk", pos: "Section 11", meaning: "散歩する", ex: "Let's take a walk this afternoon.", exJa: "今日の午後、散歩しましょう。", note: "= go for a walk" },
+  { id: "1032", word: "take lessons", pos: "Section 11", meaning: "レッスンを受ける", ex: "My sister takes piano lessons because she wants to be a pianist.", exJa: "私の姉妹はピアニストになりたいのでピアノのレッスンを受けています。", note: "" },
+  { id: "1033", word: "these days", pos: "Section 11", meaning: "最近、近ごろは", ex: "These days, a lot of people care about the environment.", exJa: "最近、たくさんの人が環境を気にしています。", note: "" },
+  { id: "1034", word: "write back", pos: "Section 11", meaning: "（手紙やEメールなどの）返事を書く［返信をする］", ex: "I hope you will write back soon.", exJa: "あなたがすぐに返事を書いてくれることを願っています。", note: "" },
+  { id: "1035", word: "write to 〜", pos: "Section 11", meaning: "〜に手紙［Eメール］を書く", ex: "I wrote to my parents every month while I was studying abroad in Boston.", exJa: "私はボストンに留学している間、毎月両親に手紙［Eメール］を書きました。", note: "" },
+  { id: "1036", word: "(a) part of 〜", pos: "Section 11", meaning: "〜の一部", ex: "Cleaning these rooms is a part of his job.", exJa: "これらの部屋を掃除することは彼の仕事の一部です。", note: "" },
+  { id: "1037", word: "a piece of 〜", pos: "Section 11", meaning: "1切れ［片、枚］の〜", ex: "Would you like a piece of cake?", exJa: "ケーキを1切れいかがですか。", note: "数えられない名詞につく" },
+  { id: "1038", word: "all the way", pos: "Section 11", meaning: "（その間）ずっと、はるばる", ex: "He had to walk all the way home from school.", exJa: "彼は学校から家までずっと歩かなければなりませんでした。", note: "" },
+  { id: "1039", word: "as 〜 as ...", pos: "Section 11", meaning: "…と同じくらい〜", ex: "I can run as fast as my older brother.", exJa: "私は兄と同じくらい速く走ることができます。", note: "" },
+  { id: "1040", word: "as usual", pos: "Section 11", meaning: "いつものように", ex: "As usual, her father took a bath before dinner.", exJa: "いつものように、彼女の父親は夕食の前にお風呂に入りました。", note: "" },
+  { id: "1041", word: "at last", pos: "Section 11", meaning: "やっと、ついに、とうとう", ex: "I finished my homework at last.", exJa: "私はやっと宿題をやり終えました。", note: "= finally" },
+  { id: "1042", word: "at the end of 〜", pos: "Section 11", meaning: "〜の終わりに、〜の突き当たりに", ex: "We asked the teacher some questions at the end of the class.", exJa: "私たちは授業の終わりに先生にいくつか質問をしました。", note: "" },
+  { id: "1043", word: "be back", pos: "Section 11", meaning: "戻る", ex: "Mom, I'm going out now, but I'll be back before it gets dark.", exJa: "お母さん、今から外出するけれど、暗くなる前に戻るね。", note: "" },
+  { id: "1044", word: "be full of 〜", pos: "Section 11", meaning: "〜でいっぱいである", ex: "The sky was full of stars.", exJa: "空は星でいっぱいでした。", note: "" },
+  { id: "1045", word: "be glad to do", pos: "Section 11", meaning: "〜してうれしい", ex: "I'm glad to know that you've passed the exam.", exJa: "私はあなたが試験に合格したと知ってうれしいです。", note: "= be happy to do／to do は感情の原因を表す不定詞" },
+  { id: "1046", word: "be in a hurry", pos: "Section 11", meaning: "急いでいる", ex: "Sorry, I can't talk now. I'm in a hurry to get to work.", exJa: "ごめんなさい、今は話せません。職場へ行くのに急いでいます。", note: "" },
+  { id: "1047", word: "be interested in 〜", pos: "Section 11", meaning: "〜に興味がある", ex: "He is interested in Japanese history.", exJa: "彼は日本の歴史に興味があります。", note: "" },
+  { id: "1048", word: "be kind to 〜", pos: "Section 11", meaning: "〜に親切である", ex: "The new neighbor was very kind to us.", exJa: "新しい隣人は私たちにとても親切でした。", note: "" },
+  { id: "1049", word: "be tired of doing", pos: "Section 11", meaning: "〜するのに飽きて［うんざりして］いる", ex: "I'm tired of watching TV. Let's go for a walk.", exJa: "私はテレビを見るのに飽きました。散歩に行きましょう。", note: "of は前置詞だから動名詞 doing が続く" },
+  { id: "1050", word: "cheer up A", pos: "Section 11", meaning: "A を元気づける", ex: "She looked sad, so we tried to cheer her up.", exJa: "彼女は悲しそうだったので、私たちは彼女を元気づけようとしました。", note: "" },
+  { id: "1051", word: "come true", pos: "Section 11", meaning: "実現する、本当になる", ex: "I'm sure your dream will come true.", exJa: "あなたの夢はきっと実現すると私は思います。", note: "" },
+  { id: "1052", word: "feel sick", pos: "Section 11", meaning: "気分が悪い", ex: "He felt sick, so he went home early.", exJa: "彼は気分が悪かったので、早く家に帰りました。", note: "" },
+  { id: "1053", word: "finish doing", pos: "Section 11", meaning: "〜し終える", ex: "My father finished washing his car before lunch.", exJa: "私の父は昼食の前に車を洗い終えました。", note: "doing を to do に変えられない" },
+  { id: "1054", word: "first of all", pos: "Section 11", meaning: "まず最初に", ex: "First of all, let me introduce myself.", exJa: "まず最初に、自己紹介をさせてください。", note: "" },
+  { id: "1055", word: "for example", pos: "Section 11", meaning: "たとえば", ex: "There are many kinds of winter sports, for example, skiing and snowboarding.", exJa: "たくさんの種類の冬のスポーツがあります。たとえば、スキーやスノーボードです。", note: "" },
+  { id: "1056", word: "get angry", pos: "Section 11", meaning: "怒る", ex: "She got angry because I broke her favorite cup.", exJa: "私が彼女のお気に入りのカップを割ったので、彼女は怒りました。", note: "" },
+  { id: "1057", word: "get back (to 〜)", pos: "Section 11", meaning: "（〜に）戻る", ex: "He got back to his office at 3 p.m.", exJa: "彼は午後3時に事務所に戻りました。", note: "" },
+  { id: "1058", word: "go on a trip", pos: "Section 11", meaning: "旅行に行く", ex: "They went on a trip to Mexico last month.", exJa: "彼らは先月メキシコへ旅行に行きました。", note: "" },
+  { id: "1059", word: "have a cold", pos: "Section 11", meaning: "風邪をひいている", ex: "Mom, can I stay home today? I think I have a cold.", exJa: "お母さん、今日は家にいてもいい？風邪をひいていると思うの。", note: "" },
+  { id: "1060", word: "have a stomachache", pos: "Section 11", meaning: "腹痛がする", ex: "The girl was absent from school yesterday because she had a stomachache.", exJa: "その女の子は昨日腹痛がしたので学校を休みました。", note: "" },
+  { id: "1061", word: "help A (to) do", pos: "Section 11", meaning: "A が〜するのを手伝う", ex: "He helped his mother to wash the dishes.", exJa: "彼は母親が皿を洗うのを手伝いました。", note: "" },
+  { id: "1062", word: "hundreds of 〜", pos: "Section 11", meaning: "何百もの〜", ex: "Hundreds of people were waiting outside the concert hall.", exJa: "何百もの人々がコンサートホールの外で待っていました。", note: "" },
+  { id: "1063", word: "in time", pos: "Section 11", meaning: "間に合って", ex: "The woman ran to the station and was just in time to catch the train.", exJa: "その女性は駅まで走り、ちょうど電車に間に合いました。", note: "on time「時間どおりに」と区別" },
+  { id: "1064", word: "introduce A to B", pos: "Section 11", meaning: "A を B に紹介する", ex: "He introduced his best friend to us.", exJa: "彼は親友を私たちに紹介しました。", note: "" },
+  { id: "1065", word: "It takes A B to do", pos: "Section 11", meaning: "A が〜するのに B（時間）がかかる", ex: "It took me a month to read the book.", exJa: "私はその本を読むのに1カ月かかりました。", note: "" },
+  { id: "1066", word: "keep doing", pos: "Section 11", meaning: "〜し続ける", ex: "Keep practicing if you want to win the match.", exJa: "その試合に勝ちたいのなら、練習し続けなさい。", note: "" },
+  { id: "1067", word: "look after 〜", pos: "Section 11", meaning: "〜の世話をする", ex: "Could you look after your little sister while I go to the bank?", exJa: "私が銀行へ行く間、あなたの妹の世話をしてもらえますか。", note: "= take care of 〜" },
+  { id: "1068", word: "make a speech", pos: "Section 11", meaning: "スピーチ［演説］をする", ex: "She had to make a long speech at the meeting yesterday.", exJa: "彼女は昨日、会合で長いスピーチをしなければなりませんでした。", note: "= give a speech" },
+  { id: "1069", word: "no more 〜", pos: "Section 11", meaning: "これ以上〜ない", ex: "There are no more boxes in my house.", exJa: "私の家にはこれ以上箱はありません。", note: "" },
+  { id: "1070", word: "on foot", pos: "Section 11", meaning: "徒歩で、歩いて", ex: "It took us about an hour to get there on foot.", exJa: "私たちはそこへ徒歩で行くのに約1時間かかりました。", note: "" },
+  { id: "1071", word: "on one's [the] way home", pos: "Section 11", meaning: "家に帰る途中で", ex: "I'll get something for dinner on my way home.", exJa: "家に帰る途中で夕食に何か買います。", note: "" },
+  { id: "1072", word: "on one's [the] way to 〜", pos: "Section 11", meaning: "〜へ行く途中で", ex: "He often buys coffee on his way to his office.", exJa: "彼はよく会社へ行く途中でコーヒーを買います。", note: "" },
+  { id: "1073", word: "on time", pos: "Section 11", meaning: "時間どおりに", ex: "The express train arrived on time.", exJa: "その急行列車は時間どおりに到着しました。", note: "in time「間に合って」と区別" },
+  { id: "1074", word: "once a week [month]", pos: "Section 11", meaning: "週［月］に1回", ex: "He goes to tennis school once a week.", exJa: "彼は週に1回テニススクールに行きます。", note: "" },
+  { id: "1075", word: "one of the 〜 A", pos: "Section 11", meaning: "最も〜（最上級）な A（複数名詞）のうちの1つ［1人］", ex: "Boston is one of the oldest cities in the United States.", exJa: "ボストンはアメリカで最も古い都市のうちの1つです。", note: "" },
+  { id: "1076", word: "right away", pos: "Section 11", meaning: "すぐに、今すぐ", ex: "Certainly, sir. I'll bring it right away.", exJa: "かしこまりました、お客さま。すぐにそれをお持ちします。", note: "" },
+  { id: "1077", word: "right now", pos: "Section 11", meaning: "ちょうど今、今すぐに", ex: "OK, I'm doing it right now.", exJa: "いいですよ、私はちょうど今それをやっています。", note: "" },
+  { id: "1078", word: "see the [a] doctor", pos: "Section 11", meaning: "医者に診てもらう", ex: "She had a fever, so she went to see the doctor.", exJa: "彼女は熱があったので、医者に診てもらいに行きました。", note: "" },
+  { id: "1079", word: "show A how to do", pos: "Section 11", meaning: "A に〜のやり方を教える", ex: "Can you show me how to use this machine?", exJa: "私にこの機械の使い方を教えてくれますか。", note: "" },
+  { id: "1080", word: "so 〜 that ...", pos: "Section 11", meaning: "とても〜（形容詞・副詞）なので…", ex: "We were so tired that we went to bed early.", exJa: "私たちはとても疲れていたので早く寝ました。", note: "" },
+  { id: "1081", word: "something (A) to do", pos: "Section 11", meaning: "何か〜すべき（A な）もの", ex: "I'm thirsty. I want something cold to drink.", exJa: "私はのどが渇いています。何か冷たい飲み物がほしいです。", note: "A には形容詞が入る" },
+  { id: "1082", word: "sound like 〜", pos: "Section 11", meaning: "〜のように聞こえる［思われる］", ex: "That sounds like a great idea.", exJa: "それはすばらしい考えのように聞こえます。", note: "" },
+  { id: "1083", word: "such a [an] 〜", pos: "Section 11", meaning: "そんなに〜、これほどの〜", ex: "I've never had such a delicious cake.", exJa: "私はそんなにおいしいケーキを食べたことがありません。", note: "" },
+  { id: "1084", word: "take a picture", pos: "Section 11", meaning: "写真を撮る", ex: "He took a lot of pictures during his trip.", exJa: "彼は旅行中にたくさんの写真を撮りました。", note: "= take a photo" },
+  { id: "1085", word: "take a shower", pos: "Section 11", meaning: "シャワーを浴びる", ex: "She took a shower after she played tennis.", exJa: "彼女はテニスをした後にシャワーを浴びました。", note: "" },
+  { id: "1086", word: "take off 〜", pos: "Section 11", meaning: "〜を脱ぐ", ex: "The man took off his hat when he went into the church.", exJa: "その男性は教会の中へ入ったときに帽子を脱ぎました。", note: "⇔ put on 〜 〜を着る" },
+  { id: "1087", word: "the other day", pos: "Section 11", meaning: "先日", ex: "I met an old friend of mine on the street the other day.", exJa: "先日、私は通りで昔の友だちに会いました。", note: "" },
+  { id: "1088", word: "the same as 〜", pos: "Section 11", meaning: "〜と同じ", ex: "My bag is the same as my sister's.", exJa: "私のかばんは姉［妹］のかばんと同じです。", note: "" },
+  { id: "1089", word: "this way", pos: "Section 11", meaning: "こちらへ", ex: "Please come this way. I'll show you our office.", exJa: "どうぞこちらへ来てください。私たちの事務所をお見せします。", note: "to などを前につけないで使う" },
+  { id: "1090", word: "thousands of 〜", pos: "Section 11", meaning: "何千もの〜、たくさんの〜", ex: "Thousands of people visit this castle every month.", exJa: "毎月、何千もの人々がこの城を訪れます。", note: "" },
+  { id: "1091", word: "turn down 〜", pos: "Section 11", meaning: "（テレビ・ラジオなど）の音量を下げる", ex: "Could you turn down the music? I'm studying.", exJa: "音楽の音量を下げていただけますか。私は勉強しているのです。", note: "" },
+  { id: "1092", word: "a glass of 〜", pos: "Section 11", meaning: "コップ1杯の〜", ex: "Can I have a glass of milk?", exJa: "牛乳をコップ1杯もらえますか。", note: "" },
+  { id: "1093", word: "be covered with 〜", pos: "Section 11", meaning: "〜でおおわれている", ex: "When I saw the ground this morning, it was covered with snow.", exJa: "今朝地面を見たら、それは雪でおおわれていました。", note: "" },
+  { id: "1094", word: "be filled with 〜", pos: "Section 11", meaning: "〜でいっぱいである", ex: "The place was filled with young people.", exJa: "その場所は若者でいっぱいでした。", note: "" },
+  { id: "1095", word: "break one's promise", pos: "Section 11", meaning: "約束を破る", ex: "She broke her promise and didn't come to the meeting.", exJa: "彼女は約束を破って会合に来ませんでした。", note: "" },
+  { id: "1096", word: "give A a hand", pos: "Section 11", meaning: "A を手伝う", ex: "I have to move this table. Could you give me a hand?", exJa: "このテーブルを動かさなければなりません。私を手伝っていただけますか。", note: "" },
+  { id: "1097", word: "give up", pos: "Section 11", meaning: "あきらめる、やめる", ex: "You can do it if you try harder. Don't give up!", exJa: "もっと一生懸命やればあなたならそれができます。あきらめないで！", note: "" },
+  { id: "1098", word: "have an interview with A", pos: "Section 11", meaning: "A にインタビューをする、A と面談する", ex: "She will have an interview with a famous pianist tomorrow.", exJa: "彼女は明日、有名なピアニストにインタビューをします。", note: "" },
+  { id: "1099", word: "in fact", pos: "Section 11", meaning: "実際は、実は", ex: "My brother is very good at soccer. In fact, he's the best player in his school.", exJa: "私の兄［弟］はサッカーがとてもじょうずです。実際、彼は学校でいちばんじょうずな選手です。", note: "" },
+  { id: "1100", word: "leave for 〜", pos: "Section 11", meaning: "〜へ（向けて）出発する", ex: "She leaves for school early in the morning every day.", exJa: "彼女は毎日朝早く学校へ向かいます。", note: "" },
+];
+
+const POS_LIST = ["すべて", "Section 10", "Section 11"];
+const SECTIONS = [
+  { key: "all", label: "全部 (200個)", range: [901, 1100] },
+  { key: "s10", label: "Section 10 (0901–1000)", range: [901, 1000] },
+  { key: "s11", label: "Section 11 (1001–1100)", range: [1001, 1100] },
+];
+
+const STORAGE_KEY = "eiken3_idiom_progress_v1";
+function loadProgress() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+
+function App() {
+  const [screen, setScreen] = useState("home");
+  const [progress, setProgress] = useState(loadProgress);
+  const [sectionKey, setSectionKey] = useState("all");
+  const [posFilter, setPosFilter] = useState("すべて");
+  const [quizResult, setQuizResultState] = useState(null);
+  const [quizPool, setQuizPool] = useState([]);
+  const [quizMode, setQuizMode] = useState("e2j");
+  const [quizLen, setQuizLen] = useState(10);
+
+  React.useEffect(() => {
+    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch (e) {}
+  }, [progress]);
+
+  const filteredWords = useMemo(() => {
+    const sec = SECTIONS.find((s) => s.key === sectionKey);
+    return WORDS.filter((w) => {
+      const num = parseInt(w.id, 10);
+      const inSec = num >= sec.range[0] && num <= sec.range[1];
+      const inPos = posFilter === "すべて" || w.pos === posFilter;
+      return inSec && inPos;
+    });
+  }, [sectionKey, posFilter]);
+
+  const stats = useMemo(() => {
+    let known = 0, learning = 0;
+    WORDS.forEach((w) => {
+      if (progress[w.id] === "known") known++;
+      else if (progress[w.id] === "learning") learning++;
+    });
+    return { known, learning, total: WORDS.length };
+  }, [progress]);
+
+  const setWordStatus = (id, status) => setProgress((p) => ({ ...p, [id]: status }));
+
+  return (
+    <div style={styles.app}>
+      <style>{globalCss}</style>
+      <Header stats={stats} onHome={() => setScreen("home")} />
+      <main style={styles.main}>
+        {screen === "home" && (
+          <Home stats={stats} onStudy={() => setScreen("study")} onQuiz={() => setScreen("quizSetup")}
+            sectionKey={sectionKey} setSectionKey={setSectionKey} posFilter={posFilter} setPosFilter={setPosFilter}
+            count={filteredWords.length}
+            onReset={() => { if (confirm("学習の進み具合をすべてリセットします。よろしいですか？")) setProgress({}); }} />
+        )}
+        {screen === "study" && (
+          <Study words={filteredWords} progress={progress} setWordStatus={setWordStatus} onBack={() => setScreen("home")} />
+        )}
+        {screen === "quizSetup" && (
+          <QuizSetup count={filteredWords.length} quizMode={quizMode} setQuizMode={setQuizMode} quizLen={quizLen} setQuizLen={setQuizLen}
+            onStart={() => { setQuizPool(buildQuiz(filteredWords, quizLen, quizMode)); setScreen("quiz"); }}
+            onBack={() => setScreen("home")} />
+        )}
+        {screen === "quiz" && (
+          <Quiz pool={quizPool} mode={quizMode} setWordStatus={setWordStatus}
+            onFinish={(r) => { setQuizResultState(r); setScreen("quizResult"); }}
+            onBack={() => setScreen("home")} />
+        )}
+        {screen === "quizResult" && (
+          <QuizResult result={quizResult}
+            onRetry={() => { setQuizPool(buildQuiz(filteredWords, quizLen, quizMode)); setScreen("quiz"); }}
+            onReviewWrong={() => {
+              const wrongIds = new Set(quizResult.wrong.map((w) => w.id));
+              setQuizPool(buildQuiz(WORDS.filter((w) => wrongIds.has(w.id)), quizResult.wrong.length, quizMode));
+              setScreen("quiz");
+            }}
+            onHome={() => setScreen("home")} />
+        )}
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildQuiz(words, len, mode) {
+  const picked = shuffle(words).slice(0, Math.min(len, words.length));
+  return picked.map((w) => {
+    const others = WORDS.filter((x) => x.id !== w.id);
+    const distractors = shuffle(others).slice(0, 3);
+    const options = shuffle([w, ...distractors]).map((o) => ({ id: o.id, label: mode === "e2j" ? o.meaning : o.word }));
+    return { prompt: mode === "e2j" ? w.word : w.meaning, sub: w.pos, answerId: w.id, options, word: w };
+  });
+}
+
+function Header({ stats, onHome }) {
+  const pct = Math.round((stats.known / stats.total) * 100);
+  return (
+    <header style={styles.header}>
+      <div style={styles.headerInner}>
+        <button onClick={onHome} style={styles.logoBtn}>
+          <span style={styles.logoMark}>熟</span>
+          <span style={styles.logoText}>英検3級 熟語マスター<span style={styles.logoSub}>中2向け・全200個</span></span>
+        </button>
+        <div style={styles.headerStat}>
+          <div style={styles.headerStatNum}>{stats.known}<span style={styles.slash}>/{stats.total}</span></div>
+          <div style={styles.headerBar}><div style={{ ...styles.headerBarFill, width: pct + "%" }} /></div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function Home({ stats, onStudy, onQuiz, sectionKey, setSectionKey, posFilter, setPosFilter, count, onReset }) {
+  const pct = Math.round((stats.known / stats.total) * 100);
+  return (
+    <div className="fade-in">
+      <section style={styles.hero}>
+        <div style={styles.heroRing}>
+          <svg viewBox="0 0 120 120" style={{ width: 132, height: 132 }}>
+            <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="10" />
+            <circle cx="60" cy="60" r="52" fill="none" stroke="#fff" strokeWidth="10"
+              strokeLinecap="round" strokeDasharray={2 * Math.PI * 52}
+              strokeDashoffset={2 * Math.PI * 52 * (1 - pct / 100)}
+              transform="rotate(-90 60 60)" style={{ transition: "stroke-dashoffset .7s ease" }} />
+          </svg>
+          <div style={styles.heroRingText}>
+            <div style={styles.heroPct}>{pct}<span style={{ fontSize: 18 }}>%</span></div>
+            <div style={styles.heroPctLabel}>おぼえた</div>
+          </div>
+        </div>
+        <div style={styles.heroInfo}>
+          <h1 style={styles.heroTitle}>今日も熟語を{"\n"}マスターしよう！</h1>
+          <div style={styles.heroChips}>
+            <span style={styles.chipKnown}>✓ おぼえた {stats.known}</span>
+            <span style={styles.chipLearn}>学習中 {stats.learning}</span>
+            <span style={styles.chipRest}>未学習 {stats.total - stats.known - stats.learning}</span>
+          </div>
+        </div>
+      </section>
+
+      <section style={styles.card}>
+        <h2 style={styles.cardTitle}>📚 学習する範囲をえらぶ</h2>
+        <div style={styles.segLabel}>セクション</div>
+        <div style={styles.segGroup}>
+          {SECTIONS.map((s) => (
+            <button key={s.key} onClick={() => setSectionKey(s.key)} style={sectionKey === s.key ? styles.segOn : styles.segOff}>{s.label}</button>
+          ))}
+        </div>
+        <div style={{ ...styles.segLabel, marginTop: 18 }}>セクションでしぼる</div>
+        <div style={styles.segWrap}>
+          {POS_LIST.map((p) => (
+            <button key={p} onClick={() => setPosFilter(p)} style={posFilter === p ? styles.pillOn : styles.pillOff}>{p}</button>
+          ))}
+        </div>
+        <div style={styles.countNote}>対象の熟語：<b style={{ color: "#e85d2f" }}>{count}個</b></div>
+      </section>
+
+      <section style={styles.actionGrid}>
+        <button onClick={onStudy} style={{ ...styles.bigAction, background: "linear-gradient(135deg,#ff8a5c,#e85d2f)" }} disabled={count === 0}>
+          <span style={styles.bigActionIcon}>🃏</span>
+          <span style={styles.bigActionTitle}>覚える（カード）</span>
+          <span style={styles.bigActionDesc}>意味・例文をチェック</span>
+        </button>
+        <button onClick={onQuiz} style={{ ...styles.bigAction, background: "linear-gradient(135deg,#3aa9a0,#1f7d76)" }} disabled={count === 0}>
+          <span style={styles.bigActionIcon}>📝</span>
+          <span style={styles.bigActionTitle}>確認テスト</span>
+          <span style={styles.bigActionDesc}>4択クイズで力だめし</span>
+        </button>
+      </section>
+      <button onClick={onReset} style={styles.resetBtn}>進み具合をリセット</button>
+    </div>
+  );
+}
+
+function Study({ words, progress, setWordStatus, onBack }) {
+  const [i, setI] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [order] = useState(() => shuffle(words));
+  const w = order[i];
+  if (!w) return null;
+  const status = progress[w.id];
+
+  const go = (dir) => {
+    setFlipped(false);
+    setTimeout(() => {
+      setI((v) => { const n = v + dir; if (n < 0) return 0; if (n >= order.length) return order.length - 1; return n; });
+    }, 120);
+  };
+  const mark = (st) => { setWordStatus(w.id, st); if (i < order.length - 1) go(1); };
+  const learnedCount = order.filter((x) => progress[x.id] === "known").length;
+
+  return (
+    <div className="fade-in">
+      <TopBar onBack={onBack} title="覚えるカード" />
+      <div style={styles.progRow}>
+        <span style={styles.progText}>{i + 1} / {order.length}</span>
+        <div style={styles.progBar}><div style={{ ...styles.progBarFill, width: ((i + 1) / order.length) * 100 + "%" }} /></div>
+        <span style={styles.progText}>✓{learnedCount}</span>
+      </div>
+      <div style={styles.cardScene} onClick={() => setFlipped((f) => !f)}>
+        <div style={{ ...styles.flipCard, transform: flipped ? "rotateY(180deg)" : "none" }}>
+          <div style={styles.faceFront}>
+            <span style={styles.posTag}>{w.pos}</span>
+            <div style={styles.cardWord}>{w.word}</div>
+            {status && <span style={status === "known" ? styles.badgeKnown : styles.badgeLearn}>{status === "known" ? "✓ おぼえた" : "学習中"}</span>}
+            <div style={styles.tapHint}>タップで意味を見る 👆</div>
+          </div>
+          <div style={styles.faceBack}>
+            <div style={styles.backMeaning}>{w.meaning}</div>
+            <div style={styles.backEx}>
+              <div style={styles.backExEn}>▶ {w.ex}</div>
+              <div style={styles.backExJa}>{w.exJa}</div>
+            </div>
+            {w.note && <div style={styles.backNote}>💡 {w.note}</div>}
+            <div style={styles.tapHint}>タップで英語にもどる 👆</div>
+          </div>
+        </div>
+      </div>
+      <div style={styles.studyBtnRow}>
+        <button onClick={() => mark("learning")} style={styles.btnLearn}>🔁 もう一回</button>
+        <button onClick={() => mark("known")} style={styles.btnKnown}>✓ おぼえた！</button>
+      </div>
+      <div style={styles.navRow}>
+        <button onClick={() => go(-1)} style={styles.navBtn} disabled={i === 0}>← 前</button>
+        <button onClick={() => go(1)} style={styles.navBtn} disabled={i === order.length - 1}>次 →</button>
+      </div>
+    </div>
+  );
+}
+
+function QuizSetup({ count, quizMode, setQuizMode, quizLen, setQuizLen, onStart, onBack }) {
+  const lengths = [...new Set([10, 20, 30, Math.min(count, 50)].filter((l) => l <= count && l > 0))];
+  return (
+    <div className="fade-in">
+      <TopBar onBack={onBack} title="確認テストの設定" />
+      <section style={styles.card}>
+        <h2 style={styles.cardTitle}>出題の形式</h2>
+        <div style={styles.segGroup}>
+          <button onClick={() => setQuizMode("e2j")} style={quizMode === "e2j" ? styles.segOn : styles.segOff}>熟語 → 意味</button>
+          <button onClick={() => setQuizMode("j2e")} style={quizMode === "j2e" ? styles.segOn : styles.segOff}>意味 → 熟語</button>
+        </div>
+        <h2 style={{ ...styles.cardTitle, marginTop: 22 }}>問題数（対象 {count}個）</h2>
+        <div style={styles.segWrap}>
+          {lengths.map((l) => (
+            <button key={l} onClick={() => setQuizLen(l)} style={quizLen === l ? styles.pillOn : styles.pillOff}>{l}問</button>
+          ))}
+        </div>
+      </section>
+      <button onClick={onStart} style={styles.startBtn} disabled={count === 0}>テストをはじめる →</button>
+    </div>
+  );
+}
+
+function Quiz({ pool, mode, setWordStatus, onFinish, onBack }) {
+  const [i, setI] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [wrong, setWrong] = useState([]);
+  const q = pool[i];
+  if (!q) return null;
+
+  const choose = (optId) => {
+    if (picked) return;
+    setPicked(optId);
+    if (optId === q.answerId) { setCorrectCount((c) => c + 1); setWordStatus(q.word.id, "known"); }
+    else { setWrong((arr) => [...arr, q.word]); setWordStatus(q.word.id, "learning"); }
+  };
+  const advance = () => {
+    if (i < pool.length - 1) { setI(i + 1); setPicked(null); }
+    else { onFinish({ total: pool.length, correct: correctCount, wrong }); }
+  };
+
+  return (
+    <div className="fade-in">
+      <TopBar onBack={onBack} title={`テスト ${i + 1}/${pool.length}`} />
+      <div style={styles.progRow}>
+        <div style={styles.progBar}><div style={{ ...styles.progBarFill, width: (i / pool.length) * 100 + "%", background: "#1f7d76" }} /></div>
+        <span style={{ ...styles.progText, color: "#1f7d76" }}>✓{correctCount}</span>
+      </div>
+      <div style={styles.quizPrompt}>
+        <div style={styles.quizPromptSub}>{q.sub}</div>
+        <div style={styles.quizPromptMain}>{q.prompt}</div>
+        <div style={styles.quizQ}>{mode === "e2j" ? "意味は？" : "英語は？"}</div>
+      </div>
+      <div style={styles.optGrid}>
+        {q.options.map((o) => {
+          let st = styles.optBtn;
+          if (picked) {
+            if (o.id === q.answerId) st = styles.optCorrect;
+            else if (o.id === picked) st = styles.optWrong;
+            else st = styles.optDim;
+          }
+          return (
+            <button key={o.id} onClick={() => choose(o.id)} style={st} disabled={!!picked}>
+              {o.label}
+              {picked && o.id === q.answerId && <span style={styles.optIcon}>✓</span>}
+              {picked && o.id === picked && o.id !== q.answerId && <span style={styles.optIcon}>✕</span>}
+            </button>
+          );
+        })}
+      </div>
+      {picked && (
+        <div className="fade-in" style={styles.quizFeedback}>
+          <div style={picked === q.answerId ? styles.fbCorrect : styles.fbWrong}>{picked === q.answerId ? "せいかい！🎉" : "おしい！もう一度かくにん 👇"}</div>
+          <div style={styles.fbCard}>
+            <b style={{ fontSize: 18 }}>{q.word.word}</b>
+            <div style={{ marginTop: 4 }}>{q.word.meaning}</div>
+            <div style={{ marginTop: 8, color: "#e85d2f", fontWeight: 600 }}>▶ {q.word.ex}</div>
+            <div style={{ color: "#777", fontSize: 14 }}>{q.word.exJa}</div>
+          </div>
+          <button onClick={advance} style={styles.nextBig}>{i < pool.length - 1 ? "次の問題へ →" : "結果を見る 🏁"}</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QuizResult({ result, onRetry, onReviewWrong, onHome }) {
+  if (!result) return null;
+  const { total, correct, wrong } = result;
+  const pct = Math.round((correct / total) * 100);
+  let msg = "もう少し！くり返せば必ず覚えられるよ 💪", emoji = "🌱";
+  if (pct === 100) { msg = "パーフェクト！すごい！🏆"; emoji = "🏆"; }
+  else if (pct >= 80) { msg = "よくできました！この調子！⭐"; emoji = "🌟"; }
+  else if (pct >= 60) { msg = "いい感じ！あと一歩！👍"; emoji = "😊"; }
+
+  return (
+    <div className="fade-in">
+      <section style={{ ...styles.card, textAlign: "center", paddingTop: 36 }}>
+        <div style={{ fontSize: 56 }}>{emoji}</div>
+        <div style={styles.resultScore}>{correct} <span style={{ fontSize: 26, color: "#bbb" }}>/ {total}</span></div>
+        <div style={styles.resultPct}>正答率 {pct}%</div>
+        <div style={styles.resultMsg}>{msg}</div>
+      </section>
+      {wrong.length > 0 && (
+        <section style={styles.card}>
+          <h2 style={styles.cardTitle}>🔁 まちがえた熟語（{wrong.length}）</h2>
+          {wrong.map((w) => (
+            <div key={w.id} style={styles.wrongRow}>
+              <div>
+                <b style={{ fontSize: 16 }}>{w.word}</b>
+                <div style={{ fontSize: 14, color: "#555" }}>{w.meaning}</div>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+      <div style={styles.actionGrid}>
+        {wrong.length > 0 && (
+          <button onClick={onReviewWrong} style={{ ...styles.startBtn, background: "linear-gradient(135deg,#ff8a5c,#e85d2f)", margin: 0 }}>まちがえた{wrong.length}問だけ再挑戦</button>
+        )}
+        <button onClick={onRetry} style={{ ...styles.startBtn, margin: 0 }}>もう一度テスト</button>
+      </div>
+      <button onClick={onHome} style={styles.resetBtn}>ホームにもどる</button>
+    </div>
+  );
+}
+
+function TopBar({ onBack, title }) {
+  return (
+    <div style={styles.topBar}>
+      <button onClick={onBack} style={styles.backBtn}>←</button>
+      <span style={styles.topTitle}>{title}</span>
+      <span style={{ width: 40 }} />
+    </div>
+  );
+}
+
+function Footer() {
+  return <footer style={styles.footer}>『英検3級 単語帳 熟語編』より・学習用アプリ</footer>;
+}
+
+const globalCss = `
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to {opacity:1; transform:none;} }
+  .fade-in { animation: fadeIn .35s ease both; }
+  button { font-family: inherit; cursor: pointer; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+`;
+
+const C = { bg: "#fff7f2", orange: "#e85d2f", orangeLight: "#ff8a5c", ink: "#33271f", teal: "#1f7d76", cream: "#ffffff", line: "#f0d9cc" };
+
+const styles = {
+  app: { minHeight: "100vh", background: `radial-gradient(circle at 0% 0%, #ffe9dd 0%, ${C.bg} 45%)`, fontFamily: "'Hiragino Maru Gothic ProN','Hiragino Sans','Yu Gothic',sans-serif", color: C.ink, paddingBottom: 40 },
+  main: { maxWidth: 560, margin: "0 auto", padding: "16px 16px 0" },
+  header: { position: "sticky", top: 0, zIndex: 20, background: "rgba(255,247,242,.9)", backdropFilter: "blur(8px)", borderBottom: `2px solid ${C.line}` },
+  headerInner: { maxWidth: 560, margin: "0 auto", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  logoBtn: { display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0 },
+  logoMark: { width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg,${C.orangeLight},${C.orange})`, color: "#fff", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 20, boxShadow: "0 3px 8px rgba(232,93,47,.35)", flexShrink: 0 },
+  logoText: { display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.2, fontWeight: 800, fontSize: 16, color: C.ink },
+  logoSub: { fontSize: 10.5, fontWeight: 600, color: C.orange, marginTop: 2 },
+  headerStat: { textAlign: "right", minWidth: 88 },
+  headerStatNum: { fontWeight: 800, fontSize: 18, color: C.orange },
+  slash: { color: "#c9b5a8", fontSize: 13, fontWeight: 600 },
+  headerBar: { height: 6, background: "#f3ddd0", borderRadius: 6, marginTop: 3, overflow: "hidden" },
+  headerBarFill: { height: "100%", background: `linear-gradient(90deg,${C.orangeLight},${C.orange})`, borderRadius: 6, transition: "width .6s ease" },
+  hero: { background: `linear-gradient(135deg,${C.orangeLight},${C.orange})`, borderRadius: 22, padding: "20px 18px", color: "#fff", display: "flex", gap: 16, alignItems: "center", boxShadow: "0 10px 26px rgba(232,93,47,.3)", marginBottom: 16 },
+  heroRing: { position: "relative", flexShrink: 0, width: 132, height: 132, display: "grid", placeItems: "center" },
+  heroRingText: { position: "absolute", textAlign: "center", lineHeight: 1 },
+  heroPct: { fontSize: 34, fontWeight: 800 },
+  heroPctLabel: { fontSize: 12, fontWeight: 600, marginTop: 4, opacity: .9 },
+  heroInfo: { flex: 1 },
+  heroTitle: { fontSize: 20, fontWeight: 800, margin: "0 0 12px", whiteSpace: "pre-line", lineHeight: 1.4 },
+  heroChips: { display: "flex", flexWrap: "wrap", gap: 6 },
+  chipKnown: { background: "rgba(255,255,255,.95)", color: C.orange, fontWeight: 700, fontSize: 12, padding: "5px 10px", borderRadius: 20 },
+  chipLearn: { background: "rgba(255,255,255,.25)", color: "#fff", fontWeight: 700, fontSize: 12, padding: "5px 10px", borderRadius: 20 },
+  chipRest: { background: "rgba(255,255,255,.15)", color: "#fff", fontWeight: 700, fontSize: 12, padding: "5px 10px", borderRadius: 20 },
+  card: { background: C.cream, borderRadius: 18, padding: 18, marginBottom: 16, boxShadow: "0 4px 16px rgba(180,120,90,.1)", border: `1px solid ${C.line}` },
+  cardTitle: { fontSize: 16, fontWeight: 800, margin: "0 0 12px", color: C.ink },
+  segLabel: { fontSize: 12.5, fontWeight: 700, color: "#a98a78", marginBottom: 8 },
+  segGroup: { display: "flex", flexDirection: "column", gap: 8 },
+  segOn: { padding: "12px 14px", borderRadius: 12, border: `2px solid ${C.orange}`, background: "#fff1ea", color: C.orange, fontWeight: 800, fontSize: 14.5, textAlign: "left" },
+  segOff: { padding: "12px 14px", borderRadius: 12, border: `2px solid ${C.line}`, background: "#fff", color: "#8a7568", fontWeight: 700, fontSize: 14.5, textAlign: "left" },
+  segWrap: { display: "flex", flexWrap: "wrap", gap: 8 },
+  pillOn: { padding: "8px 14px", borderRadius: 20, border: `2px solid ${C.orange}`, background: C.orange, color: "#fff", fontWeight: 800, fontSize: 13.5 },
+  pillOff: { padding: "8px 14px", borderRadius: 20, border: `2px solid ${C.line}`, background: "#fff", color: "#8a7568", fontWeight: 700, fontSize: 13.5 },
+  countNote: { marginTop: 14, fontSize: 14, fontWeight: 600, color: "#6b5648" },
+  actionGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 },
+  bigAction: { border: "none", borderRadius: 18, padding: "20px 14px", color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, boxShadow: "0 8px 20px rgba(180,120,90,.25)" },
+  bigActionIcon: { fontSize: 34 },
+  bigActionTitle: { fontSize: 16, fontWeight: 800 },
+  bigActionDesc: { fontSize: 11.5, opacity: .9, fontWeight: 600, textAlign: "center" },
+  resetBtn: { display: "block", margin: "8px auto 0", background: "none", border: "none", color: "#bda494", fontSize: 13, fontWeight: 600, textDecoration: "underline" },
+  topBar: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  backBtn: { width: 40, height: 40, borderRadius: 12, border: `2px solid ${C.line}`, background: "#fff", fontSize: 20, color: C.orange, fontWeight: 800 },
+  topTitle: { fontSize: 16, fontWeight: 800, color: C.ink },
+  progRow: { display: "flex", alignItems: "center", gap: 10, marginBottom: 14 },
+  progText: { fontSize: 13, fontWeight: 800, color: C.orange, whiteSpace: "nowrap" },
+  progBar: { flex: 1, height: 8, background: "#f3ddd0", borderRadius: 8, overflow: "hidden" },
+  progBarFill: { height: "100%", background: `linear-gradient(90deg,${C.orangeLight},${C.orange})`, borderRadius: 8, transition: "width .4s ease" },
+  cardScene: { perspective: 1200, marginBottom: 16, cursor: "pointer" },
+  flipCard: { position: "relative", width: "100%", minHeight: 300, transformStyle: "preserve-3d", transition: "transform .5s cubic-bezier(.4,.2,.2,1)" },
+  faceFront: { position: "absolute", inset: 0, backfaceVisibility: "hidden", background: "#fff", borderRadius: 20, border: `2px solid ${C.line}`, boxShadow: "0 8px 24px rgba(180,120,90,.15)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, gap: 12, minHeight: 300 },
+  faceBack: { position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg)", background: "linear-gradient(160deg,#fff,#fff4ee)", borderRadius: 20, border: `2px solid ${C.orange}`, boxShadow: "0 8px 24px rgba(232,93,47,.18)", display: "flex", flexDirection: "column", justifyContent: "center", padding: 24, gap: 14, minHeight: 300 },
+  posTag: { background: "#fff1ea", color: C.orange, fontWeight: 800, fontSize: 12, padding: "4px 12px", borderRadius: 20 },
+  cardWord: { fontSize: 28, fontWeight: 800, color: C.ink, textAlign: "center", lineHeight: 1.3 },
+  tapHint: { position: "absolute", bottom: 16, fontSize: 12, color: "#c4ab9b", fontWeight: 600 },
+  badgeKnown: { background: C.teal, color: "#fff", fontWeight: 700, fontSize: 12, padding: "3px 10px", borderRadius: 14 },
+  badgeLearn: { background: "#f0c44a", color: "#5a4500", fontWeight: 700, fontSize: 12, padding: "3px 10px", borderRadius: 14 },
+  backMeaning: { fontSize: 21, fontWeight: 800, color: C.orange, lineHeight: 1.4, width: "100%" },
+  backEx: { background: "#fff", borderRadius: 12, padding: "12px 14px", border: `1px solid ${C.line}` },
+  backExEn: { fontWeight: 700, color: C.ink, fontSize: 15 },
+  backExJa: { color: "#7a6557", fontSize: 14, marginTop: 4 },
+  backNote: { fontSize: 13, color: "#8a7568", background: "#fffaf6", borderRadius: 10, padding: "10px 12px", lineHeight: 1.6, border: `1px dashed ${C.line}` },
+  studyBtnRow: { display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 10, marginBottom: 10 },
+  btnLearn: { padding: "15px", borderRadius: 14, border: `2px solid #f0c44a`, background: "#fff8e6", color: "#9a7400", fontWeight: 800, fontSize: 15 },
+  btnKnown: { padding: "15px", borderRadius: 14, border: "none", background: `linear-gradient(135deg,#3aa9a0,${C.teal})`, color: "#fff", fontWeight: 800, fontSize: 16, boxShadow: "0 6px 16px rgba(31,125,118,.3)" },
+  navRow: { display: "flex", gap: 10 },
+  navBtn: { flex: 1, padding: "12px", borderRadius: 12, border: `2px solid ${C.line}`, background: "#fff", color: "#8a7568", fontWeight: 700, fontSize: 14 },
+  startBtn: { display: "block", width: "100%", padding: "17px", borderRadius: 16, border: "none", background: `linear-gradient(135deg,#3aa9a0,${C.teal})`, color: "#fff", fontWeight: 800, fontSize: 17, boxShadow: "0 8px 20px rgba(31,125,118,.3)", margin: "4px 0 12px" },
+  quizPrompt: { background: "#fff", borderRadius: 18, border: `2px solid ${C.line}`, padding: "26px 18px", textAlign: "center", marginBottom: 16, boxShadow: "0 6px 18px rgba(180,120,90,.12)" },
+  quizPromptSub: { fontSize: 13, color: "#a98a78", fontWeight: 600, marginBottom: 8 },
+  quizPromptMain: { fontSize: 24, fontWeight: 800, color: C.ink, lineHeight: 1.35 },
+  quizQ: { marginTop: 10, fontSize: 13, color: C.teal, fontWeight: 700 },
+  optGrid: { display: "flex", flexDirection: "column", gap: 10 },
+  optBtn: { padding: "16px 18px", borderRadius: 14, border: `2px solid ${C.line}`, background: "#fff", color: C.ink, fontWeight: 700, fontSize: 15, textAlign: "left", position: "relative", transition: "all .15s" },
+  optCorrect: { padding: "16px 18px", borderRadius: 14, border: `2px solid ${C.teal}`, background: "#e6f5f3", color: C.teal, fontWeight: 800, fontSize: 15, textAlign: "left", position: "relative" },
+  optWrong: { padding: "16px 18px", borderRadius: 14, border: `2px solid #e0573f`, background: "#fdeae5", color: "#c0432d", fontWeight: 800, fontSize: 15, textAlign: "left", position: "relative" },
+  optDim: { padding: "16px 18px", borderRadius: 14, border: `2px solid ${C.line}`, background: "#faf4f0", color: "#bba99c", fontWeight: 600, fontSize: 15, textAlign: "left", position: "relative" },
+  optIcon: { position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", fontSize: 18, fontWeight: 800 },
+  quizFeedback: { marginTop: 16 },
+  fbCorrect: { fontSize: 18, fontWeight: 800, color: C.teal, textAlign: "center", marginBottom: 10 },
+  fbWrong: { fontSize: 18, fontWeight: 800, color: "#c0432d", textAlign: "center", marginBottom: 10 },
+  fbCard: { background: "#fff", borderRadius: 14, border: `1px solid ${C.line}`, padding: "14px 16px", lineHeight: 1.5 },
+  nextBig: { display: "block", width: "100%", marginTop: 14, padding: "16px", borderRadius: 14, border: "none", background: `linear-gradient(135deg,${C.orangeLight},${C.orange})`, color: "#fff", fontWeight: 800, fontSize: 16, boxShadow: "0 6px 16px rgba(232,93,47,.3)" },
+  resultScore: { fontSize: 52, fontWeight: 800, color: C.orange, marginTop: 8 },
+  resultPct: { fontSize: 17, fontWeight: 700, color: "#8a7568" },
+  resultMsg: { fontSize: 16, fontWeight: 700, color: C.ink, marginTop: 12 },
+  wrongRow: { display: "flex", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${C.line}` },
+  footer: { textAlign: "center", fontSize: 11.5, color: "#c4ab9b", marginTop: 18, padding: "0 16px" },
+};
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+
+</script>
+</body>
+</html>
